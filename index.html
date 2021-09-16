@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Exo - Reaction Time</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="title" content="Exo">
+<meta name=”description” content="Exo">
+<link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+
+<body>
+  <div class="grid grid-rows-3 grid-flow-col gap-4 items-center justify-items-center h-screen overflow-x-hidden">
+    <div class="py-16">
+      <h2 class="text-6xl text-gray-700">Reaction Time</h2>
+    </div>
+    <div
+      class="game-area cursor-pointer text-white text-2xl w-4/5 bg-gradient-to-r rounded-xl shadow-xl flex justify-center items-center text-center self-stretch from-blue-400 to-blue-500 text-blue-50">
+      <div>
+        <div>When the red box turns green, click as fast as you can.</div>
+        <div><small>Click anywhere to start.</small></div>
+      </div>`
+    </div>
+    <div class="self-start pt-8 w-1/2 text-center">
+      <h3 class="text-2xl text-gray-700 pb-4">Results</h3>
+      <hr />
+      <ul class="results pt-4"></ul>
+    </div>
+  </div>
+</body>
+<script>
+  const STATES = {
+    INITIAL: {
+      name: 'INITIAL',
+      color: 'blue',
+    },
+    WAITING: { name: 'WAITING', color: 'red', innerHTML: 'Wait for green...' },
+    ACTIVATED: { name: 'ACTIVATED', color: 'green', innerHTML: 'CLICK!' },
+    TOO_EARLY: { name: 'TOO_EARLY', color: 'blue', innerHTML: 'Too early.. <br/> Click to retry' },
+    RESOLVED: { name: 'RESOLVED', color: 'blue', innerHTML: (props) => `<div class="text-center"><div>Reaction time:</div><div><b>${props[0]} ms</b></div><br/><div><small>Click to keep going</small></div></div>` }
+  }
+
+  let startTime = 0
+  let timeout = null
+  let currentState = STATES.INITIAL
+  const gameArea = document.querySelector('.game-area')
+
+  const getRandomArbitrary = (min, max) => Math.random() * (max - min) + min
+  const switchColor = (element, color) => {
+    const colorClasses = new RegExp(/[ ]*from-[a-z]+-[0-9]+ to-[a-z]+-[0-9]+ text-[a-z]+-[0-9]+\b/, 'g')
+    element.className = `${element.className.replace(colorClasses, '')} from-${color}-400 to-${color}-500 text-${color}-50`
+  }
+
+  const switchState = (stateName, props) => {
+    const { name, color, innerHTML } = STATES[stateName]
+    currentState = name
+    switchColor(gameArea, color)
+    if (innerHTML) {
+      gameArea.innerHTML = props ? innerHTML(props) : innerHTML
+    }
+  }
+
+  const activate = () => {
+    switchState('ACTIVATED')
+    startTime = Date.now()
+  }
+
+  const tooEarly = () => {
+    clearTimeout(timeout)
+    switchState('TOO_EARLY')
+  }
+
+  const setResolved = (time) => {
+    switchState('RESOLVED', [time])
+    const newLI = document.createElement('li')
+    newLI.appendChild(document.createTextNode(`${time} ms`));
+    document.querySelector('.results').prepend(newLI)
+  }
+
+  const clickOrTouchListener = () => {
+    if (currentState === STATES.ACTIVATED.name) {
+      setResolved(Date.now() - startTime)
+    } else if (currentState === STATES.INITIAL.name || currentState === STATES.TOO_EARLY.name || currentState === STATES.RESOLVED.name) {
+      switchState('WAITING')
+      timeout = setTimeout(() => { activate() }, getRandomArbitrary(1000, 5000))
+    } else if (currentState === STATES.WAITING.name) {
+      tooEarly()
+    }
+  }
+
+  ['mousedown', 'touchstart'].map(eventName => gameArea.addEventListener(eventName, clickOrTouchListener, false))
+
+  switchState('INITIAL')
+</script>
+
+</html>
