@@ -86,7 +86,7 @@
     }
   }
 
-  ['mousedown', 'touchstart'].map(eventName => gameArea.addEventListener(eventName, clickOrTouchListener, false))
+  gameArea.addEventListener('pointerdown', clickOrTouchListener, false)
 
   switchState('INITIAL')
 </script>
